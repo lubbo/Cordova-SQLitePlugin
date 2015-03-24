@@ -100,6 +100,14 @@ public class SQLitePlugin extends CordovaPlugin {
         String dbname;
 
         switch (action) {
+            case tileKey:
+                o = args.getJSONObject(0);
+                String zoom = o.getString("zoom");
+                String y = o.getString("row");
+                String x = o.getString("col");
+
+                this.tileKey(Long.valueOf(zoom), Long.valueOf(x), Long.valueOf(y), cbc);
+                break;
             case open:
                 o = args.getJSONObject(0);
                 dbname = o.getString("name");
@@ -159,7 +167,7 @@ public class SQLitePlugin extends CordovaPlugin {
                 DBRunner r = dbrmap.get(dbname);
                 if (r != null) {
                     try {
-                        r.q.put(q); 
+                        r.q.put(q);
                     } catch(Exception e) {
                         Log.e(SQLitePlugin.class.getSimpleName(), "couldn't add to queue", e);
                         cbc.error("couldn't add to queue");
@@ -197,6 +205,17 @@ public class SQLitePlugin extends CordovaPlugin {
     // --------------------------------------------------------------------------
     // LOCAL METHODS
     // --------------------------------------------------------------------------
+
+    private void tileKey(long zoom, long colX, long colY, CallbackContext cbc)
+  	{
+  		final long x = (long) colX & 0xFFFFFFF;
+  		final long y = (long) colY & 0xFFFFFFF;
+  		final long z = (long) zoom & 0xFF;
+  //		final long index = ((z << z) + x << z) + y;
+  		final long index = (y << 36) | (z << 28) | (x << 0);
+  //		final long index = (z << 36) | (x << 28) | (y << 0);
+  		cbc.success(String.valueOf(index));
+  	}
 
     private void startDatabase(String dbname, JSONObject options, CallbackContext cbc) {
         // TODO: is it an issue that we can orphan an existing thread?  What should we do here?
@@ -278,7 +297,7 @@ public class SQLitePlugin extends CordovaPlugin {
                 int len;
                 while ((len = in.read(buf)) > 0)
                     out.write(buf, 0, len);
-    
+
                 Log.v("info", "Copied prepopulated DB content to: " + newDbFile.getAbsolutePath());
             } catch (IOException e) {
                 Log.v("createFromAssets", "No prepopulated DB found, Error=" + e.getMessage());
@@ -289,7 +308,7 @@ public class SQLitePlugin extends CordovaPlugin {
                     } catch (IOException ignored) {
                     }
                 }
-    
+
                 if (out != null) {
                     try {
                         out.close();
@@ -889,7 +908,7 @@ public class SQLitePlugin extends CordovaPlugin {
                             Log.e(SQLitePlugin.class.getSimpleName(), "couldn't delete database", e);
                             dbq.cbc.error("couldn't delete database: " + e);
                         }
-                    }                    
+                    }
                 } catch (Exception e) {
                     Log.e(SQLitePlugin.class.getSimpleName(), "couldn't close database", e);
                     if (dbq.cbc != null) {
@@ -899,6 +918,20 @@ public class SQLitePlugin extends CordovaPlugin {
             }
         }
     }
+
+    private byte[] unencodeData(byte[] data)
+  	{
+  		data[0] = -119;
+  		data[1] = 80;
+  		data[2] = 78;
+  		data[3] = 71;
+  		data[4] = 13;
+  		data[5] = 10;
+  		data[6] = 26;
+  		data[7] = 10;
+
+  		return data;
+  	}
 
     private final class DBQuery {
         // XXX TODO replace with DBRunner action enum:
@@ -948,6 +981,7 @@ public class SQLitePlugin extends CordovaPlugin {
         delete,
         executeSqlBatch,
         backgroundExecuteSqlBatch,
+        tileKey,
     }
 
     private static enum QueryType {

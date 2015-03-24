@@ -81,6 +81,10 @@
     this.open(this.openSuccess, this.openError);
   };
 
+  SQLitePlugin.prototype.tileKey = function(zoom,row,col,success,error) {
+    cordova.exec(success,error,"SQLitePlugin","tileKey", [{zoom: zoom, row: row, col: col}]);
+  };
+
   SQLitePlugin.prototype.databaseFeatures = {
     isSQLitePluginDatabase: true
   };
@@ -195,6 +199,25 @@
     this.addTransaction(new SQLitePluginTransaction(this, myfn, null, null, false, false));
   };
 
+  SQLitePluginNoCrypt.prototype.executeSqlDecrypt = function(statement, params, success, error) {
+    console.log('SQLitePlugin.prototype.executeSqlDecrypt');
+    var myerror, myfn, mysuccess;
+    mysuccess = function(t, r) {
+      if (!!success) {
+        return success(r);
+      }
+    };
+    myerror = function(t, e) {
+      if (!!error) {
+        return error(e);
+      }
+    };
+    myfn = function(tx) {
+      tx.executeSqlDecrypt(statement, params, mysuccess, myerror);
+    };
+    this.addTransaction(new SQLitePluginTransaction(this, myfn, null, null, false, false));
+  };
+
   SQLitePluginTransaction = function(db, fn, error, success, txlock, readOnly) {
     if (typeof fn !== "function") {
 
@@ -252,6 +275,24 @@
     this.addStatement(sql, values, success, error);
   };
 
+  SQLitePluginTransaction.prototype.executeSqlDecrypt = function(sql, values, success, error) {
+    console.log('SQLitePluginTransaction.prototype.executeSqlDecrypt');
+    if (this.finalized) {
+      throw {
+        message: 'InvalidStateError: DOM Exception 11: This transaction is already finalized. Transactions are committed after its success or failure handlers are called. If you are using a Promise to handle callbacks, be aware that implementations following the A+ standard adhere to run-to-completion semantics and so Promise resolution occurs on a subsequent tick and therefore after the transaction commits.',
+        code: 11
+      };
+      return;
+    }
+    if (this.readOnly && READ_ONLY_REGEX.test(sql)) {
+      this.handleStatementFailure(error, {
+        message: 'invalid sql for a read-only transaction'
+      });
+      return;
+    }
+    this.addStatementDecrypt(sql, values, success, error);
+  };
+
   SQLitePluginTransaction.prototype.addStatement = function(sql, values, success, error) {
     var params, qid, t, v, _i, _len;
     qid = this.executes.length;
@@ -268,6 +309,27 @@
       error: error,
       qid: qid,
       sql: sql,
+      params: params
+    });
+  };
+
+  SQLitePluginTransaction.prototype.addStatementDecrypt = function(sql, values, success, error) {
+    var params, qid, t, v, _i, _len;
+    qid = this.executes.length;
+    params = [];
+    if (!!values && values.constructor === Array) {
+      for (_i = 0, _len = values.length; _i < _len; _i++) {
+        v = values[_i];
+        t = typeof v;
+        params.push((v === null || v === void 0 || t === 'number' || t === 'string' ? v : v instanceof Blob ? v.valueOf() : v.toString()));
+      }
+    }
+    this.executes.push({
+      success: success,
+      error: error,
+      qid: qid,
+      sql: sql,
+      decript: true,
       params: params
     });
   };

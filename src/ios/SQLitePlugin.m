@@ -109,6 +109,77 @@ static void sqlite_regexp(sqlite3_context* context, int argc, sqlite3_value** va
     return dbPath;
 }
 
+/*
+ * Creates a unique single key for a map tile.
+ *
+ * Copyright (c) 2008-2009, Route-Me Contributors
+ */
+uint64_t RMTileKeyNoCrypt(int tileZoom, int tileX, int tileY)
+{
+	uint64_t zoom = (uint64_t) tileZoom & 0xFFLL; // 8bits, 256 levels
+	uint64_t x = (uint64_t) tileX & 0xFFFFFFFLL;  // 28 bits
+	uint64_t y = (uint64_t) tileY & 0xFFFFFFFLL;  // 28 bits
+
+	//uint64_t key = (zoom << 56) | (x << 28) | (y << 0);
+	uint64_t key = (y << 36) | (zoom << 28) | (x << 0);
+
+	return key;
+}
+
+-(void) tileKey:(CDVInvokedUrlCommand*)command
+{
+
+    CDVPluginResult* pluginResult = nil;
+
+    if (command.arguments.count != 1)
+    {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"{message:'Wrong number of parameters'}"];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        return;
+    }
+
+    NSDictionary* arguments = command.arguments[0];
+
+    NSString *row = arguments[@"row"];
+    NSString *col = arguments[@"col"];
+    NSString *zoom = arguments[@"zoom"];
+
+    if (!row || !col || !zoom)
+    {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"{message:'Wrong number of parameters'}"];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        return;
+    }
+
+    uint64_t key = RMTileKeyNoCrypt([zoom integerValue], [col integerValue], [row integerValue]);
+
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"%lld",key]];
+
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (NSData*) unencodeData:(NSData*)sourceData
+{
+    NSMutableData* encImage = [NSMutableData dataWithData:sourceData];
+    NSRange range = {.location = 0 , .length =  8};
+
+    Byte header[8];
+    //137 80 78 71 13 10 26 10
+    header[0] = 137;
+    header[1] = 80;
+    header[2] = 78;
+    header[3] = 71;
+    header[4] = 13;
+    header[5] = 10;
+    header[6] = 26;
+    header[7] = 10;
+    [encImage replaceBytesInRange:range withBytes:header];
+
+    NSData* resultImage = [NSData dataWithData:encImage];
+
+    return resultImage;
+}
+
 -(void)open: (CDVInvokedUrlCommand*)command
 {
     CDVPluginResult* pluginResult = nil;
@@ -117,7 +188,7 @@ static void sqlite_regexp(sqlite3_context* context, int argc, sqlite3_value** va
     NSString *dbfilename = [options objectForKey:@"name"];
 
     NSString *dblocation = [options objectForKey:@"dblocation"];
-    if (dblocation == NULL) dblocation = @"docs";
+    if (dblocation == NULL) dblocation = @"nosync";
     //NSLog(@"using db location: %@", dblocation);
 
     NSString *dbname = [self getDBPath:dbfilename at:dblocation];

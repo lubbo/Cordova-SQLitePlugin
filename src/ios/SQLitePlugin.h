@@ -54,4 +54,7 @@ typedef int WebSQLError;
 
 +(NSString*)getBlobAsBase64String:(const char*) blob_chars
                        withlength:(int) blob_length;
+
+-(void) tileKey:(CDVInvokedUrlCommand*)command;
+
 @end /* vim: set expandtab : */
