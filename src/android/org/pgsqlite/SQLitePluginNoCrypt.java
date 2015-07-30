@@ -38,7 +38,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 
-public class SQLitePlugin extends CordovaPlugin {
+public class SQLitePluginNoCrypt extends CordovaPlugin {
 
     private static final Pattern FIRST_WORD = Pattern.compile("^\\s*(\\S+)",
             Pattern.CASE_INSENSITIVE);
