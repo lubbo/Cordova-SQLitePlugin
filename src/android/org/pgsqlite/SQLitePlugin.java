@@ -985,6 +985,7 @@ public class SQLitePlugin extends CordovaPlugin {
         delete,
         executeSqlBatch,
         backgroundExecuteSqlBatch,
+		tileKey
     }
 
     private static enum QueryType {

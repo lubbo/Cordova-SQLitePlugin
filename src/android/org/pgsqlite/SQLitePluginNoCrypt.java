@@ -208,13 +208,14 @@ public class SQLitePlugin extends CordovaPlugin {
     // LOCAL METHODS
     // --------------------------------------------------------------------------
 
-    private void tileKey(long zoom, long colX, long colY, CallbackContext cbc)
+	private void tileKey(long zoom, long colX, long colY, CallbackContext cbc)
 	{
 		final long x = (long) colX & 0xFFFFFFF;
 		final long y = (long) colY & 0xFFFFFFF;
 		final long z = (long) zoom & 0xFF;
 //		final long index = ((z << z) + x << z) + y;
 		final long index = (y << 36) | (z << 28) | (x << 0);
+//		final long index = (z << 36) | (x << 28) | (y << 0);
 		cbc.success(String.valueOf(index));
 	}
     
@@ -810,8 +811,8 @@ public class SQLitePlugin extends CordovaPlugin {
                 row.put(key, cur.getDouble(i));
                 break;
             case Cursor.FIELD_TYPE_BLOB:
-//                row.put(key, new String(Base64.encode(cur.getBlob(i), Base64.DEFAULT)));
-            	  row.put(key, new String(Base64.encode(unencodeData(cur.getBlob(i)), Base64.DEFAULT)));
+                row.put(key, new String(Base64.encode(cur.getBlob(i), Base64.DEFAULT)));
+//            	  row.put(key, new String(Base64.encode(unencodeData(cur.getBlob(i)), Base64.DEFAULT)));
                 break;
             case Cursor.FIELD_TYPE_STRING:
             default: /* (not expected) */
@@ -834,8 +835,8 @@ public class SQLitePlugin extends CordovaPlugin {
         } else if (cursorWindow.isFloat(pos, i)) {
             row.put(key, cursor.getDouble(i));
         } else if (cursorWindow.isBlob(pos, i)) {
-//            row.put(key, new String(Base64.encode(cursor.getBlob(i), Base64.DEFAULT)));
-            row.put(key, new String(Base64.encode(unencodeData(cursor.getBlob(i)), Base64.DEFAULT)));
+            row.put(key, new String(Base64.encode(cursor.getBlob(i), Base64.DEFAULT)));
+//            row.put(key, new String(Base64.encode(unencodeData(cursor.getBlob(i)), Base64.DEFAULT)));
         } else { // string
             row.put(key, cursor.getString(i));
         }
@@ -985,6 +986,7 @@ public class SQLitePlugin extends CordovaPlugin {
         delete,
         executeSqlBatch,
         backgroundExecuteSqlBatch,
+		tileKey
     }
 
     private static enum QueryType {
