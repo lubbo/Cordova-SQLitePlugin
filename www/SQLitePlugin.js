@@ -65,7 +65,7 @@
   SQLitePlugin = function(openargs, openSuccess, openError) {
     var dbname;
     if (!(openargs && openargs['name'])) {
-      throw newSQLError("Cannot create a SQLitePlugin db instance without a db name");
+      throw newSQLError("Cannot create a SQLitePluginNoCrypt db instance without a db name");
     }
     dbname = openargs.name;
     this.openargs = openargs;
@@ -82,7 +82,7 @@
   };
   
   SQLitePlugin.prototype.tileKey = function(zoom,row,col,success,error) {
-	    cordova.exec(success,error,"SQLitePlugin","tileKey", [{zoom: zoom, row: row, col: col}]);
+	    cordova.exec(success,error,"SQLitePluginNoCrypt","tileKey", [{zoom: zoom, row: row, col: col}]);
 	  };
 
   SQLitePlugin.prototype.databaseFeatures = {
@@ -158,7 +158,7 @@
         };
       })(this);
       this.openDBs[this.dbname] = DB_STATE_INIT;
-      cordova.exec(opensuccesscb, error, "SQLitePlugin", "open", [this.openargs]);
+      cordova.exec(opensuccesscb, error, "SQLitePluginNoCrypt", "open", [this.openargs]);
     }
   };
 
@@ -169,7 +169,7 @@
         return;
       }
       delete this.openDBs[this.dbname];
-      cordova.exec(success, error, "SQLitePlugin", "close", [
+      cordova.exec(success, error, "SQLitePluginNoCrypt", "close", [
         {
           path: this.dbname
         }
@@ -201,7 +201,7 @@
 
   /*DAVIDE*/
   SQLitePlugin.prototype.executeSqlDecrypt = function(statement, params, success, error) {
-	    console.log('SQLitePlugin.prototype.executeSqlDecrypt');
+	    console.log('SQLitePluginNoCrypt.prototype.executeSqlDecrypt');
 	    var myerror, myfn, mysuccess;
 	    mysuccess = function(t, r) {
 	      if (!!success) {
@@ -414,7 +414,7 @@
         }
       }
     };
-    cordova.exec(mycb, null, "SQLitePlugin", "backgroundExecuteSqlBatch", [
+    cordova.exec(mycb, null, "SQLitePluginNoCrypt", "backgroundExecuteSqlBatch", [
       {
         dbargs: {
           dbname: this.db.dbname
@@ -545,7 +545,7 @@
         args.dblocation = dblocation || dblocations[0];
       }
       delete SQLitePlugin.prototype.openDBs[args.path];
-      return cordova.exec(success, error, "SQLitePlugin", "delete", [args]);
+      return cordova.exec(success, error, "SQLitePluginNoCrypt", "delete", [args]);
     }
   };
 
